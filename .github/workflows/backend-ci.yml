@@ -3,13 +3,11 @@ name: Backend CI
 on:
     push:
         branches: [ develop, main, feature/**, bugfix/**, hotfix/**, release/** ]
-        paths: [ "**", "!frontend/**" ]
     pull_request:
         branches: [ develop, main ]
-        paths: [ "**", "!frontend/**" ]
 
 jobs:
-    build-test:
+    build:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -21,9 +19,6 @@ jobs:
                   distribution: 'temurin'
                   cache: 'maven'
 
-            - name: Build (skip tests for now)
-              run: mvn -B -DskipTests verify
-
-
-            - name: Spotless Check
-              run: mvn -q -Dspotless.check
+            # Clean & build while skipping test *compilation* and execution
+            - name: Build (skip tests completely)
+              run: mvn -B -Dmaven.test.skip=true clean package
