@@ -26,4 +26,4 @@ jobs:
 
 
             - name: Spotless Check
-              run: mvn -q -Dspotless.check
+              run: mvn spotless.check
