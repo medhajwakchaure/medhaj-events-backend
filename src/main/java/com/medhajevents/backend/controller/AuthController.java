@@ -4,15 +4,19 @@ import com.medhajevents.backend.dto.LoginRequest;
 import com.medhajevents.backend.dto.RegisterRequest;
 import com.medhajevents.backend.dto.ApiResponse;
 import com.medhajevents.backend.dto.AuthResponse;
+import com.medhajevents.backend.exception.BadRequestException;
 import com.medhajevents.backend.model.User;
 import com.medhajevents.backend.repository.UserRepository;
 import com.medhajevents.backend.security.JwtService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Authentication", description = "Login & Register APIs")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -33,13 +37,13 @@ public class AuthController {
     }
 
     // ---------------- REGISTER ----------------
+    @Operation(summary = "Register new user")
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> register(
             @RequestBody RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Email already exists"));
+            throw new BadRequestException("Email already exists");
         }
 
         User user = User.builder()
@@ -57,6 +61,7 @@ public class AuthController {
     }
 
     // ---------------- LOGIN ----------------
+    @Operation(summary = "User login")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
             @RequestBody LoginRequest request) {
@@ -68,9 +73,11 @@ public class AuthController {
                 )
         );
 
-        String token = jwtService.generateToken(request.getEmail());
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() ->
+                        new BadRequestException("Invalid email or password"));
 
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        String token = jwtService.generateToken(user.getEmail());
 
         AuthResponse authResponse = AuthResponse.builder()
                 .token(token)

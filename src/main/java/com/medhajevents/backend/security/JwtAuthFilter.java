@@ -21,6 +21,7 @@ public class JwtAuthFilter extends GenericFilter {
         this.userDetailsService = userDetailsService;
     }
 
+
     @Override
     public void doFilter(ServletRequest request,
                          ServletResponse response,
@@ -28,6 +29,14 @@ public class JwtAuthFilter extends GenericFilter {
             throws IOException, ServletException {
 
         HttpServletRequest httpRequest = (HttpServletRequest) request;
+
+        String path = httpRequest.getServletPath();
+        if (path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = httpRequest.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -41,14 +50,11 @@ public class JwtAuthFilter extends GenericFilter {
                         new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities());
 
-                auth.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(httpRequest)
-                );
-
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
 
         chain.doFilter(request, response);
     }
+
 }
